@@ -52,6 +52,8 @@ child was the `span`.
 | `explicitHeight`  | Explicit height to resize. Defaults to the container's height. | `null` |
 | `changeLineHeight`  | Also change the `line-height` of the parent container. This might be useful when shrinking to a small container. | `false` |
 | `debug`           | Output debugging messages to console. | `false` |
+| `scalePt`         | Use point unit to do scaling | `false` |
+| `doNotEnlarge`    | Do not scale text larger than source size, schould not be used iwth maxFontPixels | `false` |
 
 For example,
 
