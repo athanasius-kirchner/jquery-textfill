@@ -45,7 +45,9 @@
 			complete         : null, // callback when all is done
 			explicitWidth    : null,
 			explicitHeight   : null,
-			changeLineHeight : false
+			changeLineHeight : false,
+			scalePt          : false,
+			doNotEnlarge     : false
 		};
 
 		var Opts = $.extend(defaults, options);
@@ -78,7 +80,7 @@
 
 		// Outputs all information on the current sizing
 		// of the font.
-		function _debug_sizing(prefix, ourText, maxHeight, maxWidth, minFontPixels, maxFontPixels) {
+		function _debug_sizing(prefix, ourText, maxHeight, maxWidth, minFontPixels, maxFontPixels, unit) {
 
 			function _m(v1, v2) {
 
@@ -98,8 +100,8 @@
 				'font-size: ' + ourText.css('font-size') + ',' +
 				'Height: '    + ourText.height() + 'px ' + _m(ourText.height(), maxHeight) + maxHeight + 'px,' +
 				'Width: '     + ourText.width()  + _m(ourText.width() , maxWidth)  + maxWidth + ',' +
-				'minFontPixels: ' + minFontPixels + 'px, ' +
-				'maxFontPixels: ' + maxFontPixels + 'px }'
+				'minFontPixels: ' + minFontPixels + unit + ', ' +
+				'maxFontPixels: ' + maxFontPixels + unit + ' }'
 			);
 		}
 
@@ -120,14 +122,17 @@
 		 * @param {number} maxFontPixels Maximum value the font can
 		 *                               get resized to (in pixels).
 		 *
+		 * @param {string} unit Font unit supported px and pt
+         *
 		 * @return Size (in pixels) that the font can be resized.
 		 */
-		function _sizing(prefix, ourText, func, max, maxHeight, maxWidth, minFontPixels, maxFontPixels) {
+		function _sizing(prefix, ourText, func, max, maxHeight, maxWidth, minFontPixels, maxFontPixels, unit) {
 
 			_debug_sizing(
 				prefix, ourText,
 				maxHeight, maxWidth,
-				minFontPixels, maxFontPixels
+				minFontPixels, maxFontPixels,
+                unit
 			);
 
 			// The kernel of the whole plugin, take most attention
@@ -153,7 +158,7 @@
 			while (minFontPixels < (maxFontPixels - 1)) {
 
 				var fontSize = Math.floor((minFontPixels + maxFontPixels) / 2);
-				ourText.css('font-size', fontSize);
+				ourText.css('font-size', fontSize + unit);
 
 				if (func.call(ourText) <= max) {
 					minFontPixels = fontSize;
@@ -167,19 +172,20 @@
 				_debug_sizing(
 					prefix, ourText,
 					maxHeight, maxWidth,
-					minFontPixels, maxFontPixels
+					minFontPixels, maxFontPixels,
+                    unit
 				);
 			}
 
-			ourText.css('font-size', maxFontPixels);
-
+			ourText.css('font-size', maxFontPixels + unit);
 			if (func.call(ourText) <= max) {
 				minFontPixels = maxFontPixels;
 
 				_debug_sizing(
 					prefix + '* ', ourText,
 					maxHeight, maxWidth,
-					minFontPixels, maxFontPixels
+					minFontPixels, maxFontPixels,
+                    unit
 				);
 			}
 			return minFontPixels;
@@ -198,21 +204,28 @@
 			// Contains the child element we will resize.
 			// $(this) means the parent container
 			var ourText = $(Opts.innerTag + ':visible:first', this);
-
+			var unit = 'px';
 			// Will resize to this dimensions.
 			// Use explicit dimensions when specified
 			var maxHeight = Opts.explicitHeight || $(this).height();
 			var maxWidth  = Opts.explicitWidth  || $(this).width();
 
 			var oldFontSize = ourText.css('font-size');
-
 			var lineHeight  = parseFloat(ourText.css('line-height')) / parseFloat(oldFontSize);
+            if(Opts.scalePt){
+                unit = 'pt';
+                oldFontSize = (Math.round(parseFloat(oldFontSize) * 72 / 96)) + unit;
+                lineHeight = Math.round(parseFloat(ourText.css('line-height')) * 72 / 96) / parseFloat(oldFontSize);
+            }
+            if(Opts.doNotEnlarge){
+                Opts.maxFontPixels = parseInt(oldFontSize);
+			}
 
 			_debug('[TextFill] Inner text: ' + ourText.text());
 			_debug('[TextFill] All options: ', Opts);
 			_debug('[TextFill] Maximum sizes: { ' +
 				   'Height: ' + maxHeight + 'px, ' +
-				   'Width: '  + maxWidth  + 'px' + ' }'
+				   'Width: '  + maxWidth  + 'px }'
 				  );
 
 			var minFontPixels = Opts.minFontPixels;
@@ -236,7 +249,8 @@
 					'Height', ourText,
 					$.fn.height, maxHeight,
 					maxHeight, maxWidth,
-					minFontPixels, maxFontPixels
+					minFontPixels, maxFontPixels,
+					unit
 				);
 
 			// 2. Calculate which `font-size` would
@@ -247,32 +261,33 @@
 				'Width', ourText,
 				$.fn.width, maxWidth,
 				maxHeight, maxWidth,
-				minFontPixels, maxFontPixels
+				minFontPixels, maxFontPixels,
+                unit
 			);
 
 			// 3. Actually resize the text!
 
 			if (Opts.widthOnly) {
 				ourText.css({
-					'font-size'  : fontSizeWidth,
+					'font-size'  : fontSizeWidth + unit,
 					'white-space': 'nowrap'
 				});
 
 				if (Opts.changeLineHeight)
 					ourText.parent().css(
 						'line-height',
-						(lineHeight * fontSizeWidth + 'px')
+						(lineHeight * fontSizeWidth + unit)
 					);
 			}
 			else {
 				var fontSizeFinal = Math.min(fontSizeHeight, fontSizeWidth);
 
-				ourText.css('font-size', fontSizeFinal);
+				ourText.css('font-size', fontSizeFinal + unit);
 
 				if (Opts.changeLineHeight)
 					ourText.parent().css(
 						'line-height',
-						(lineHeight * fontSizeFinal) + 'px'
+						(lineHeight * fontSizeFinal) + unit
 					);
 			}
 
@@ -286,7 +301,6 @@
 			// We weren't supposed to exceed the original size
 			if ((ourText.width()  > maxWidth) ||
 				(ourText.height() > maxHeight && !Opts.widthOnly)) {
-
 				ourText.css('font-size', oldFontSize);
 
 				// Failure callback

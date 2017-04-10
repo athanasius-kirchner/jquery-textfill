@@ -56,7 +56,7 @@ QUnit.test('size up to max', function (assert) {
   var $jtf = $('#' + JTF);
   var $span = $jtf.find('span');
   $jtf.textfill({debug: true, maxFontPixels: 0});
-  assert.equal($span.css('font-size'), '172px');
+  assert.equal($span.css('font-size'), '190px');
 });
 
 
@@ -78,7 +78,7 @@ QUnit.test('width be maxWidth', function (assert) {
   var $jtf = $('#' + JTF);
   var $span = $jtf.find('span');
   $jtf.textfill({debug: true, maxFontPixels: 0});
-  assert.equal($span.css('font-size'), '119px');
+  assert.equal($span.css('font-size'), '141px');
 });
 
 
@@ -100,7 +100,7 @@ QUnit.test('height be maxHeight', function (assert) {
   var $jtf = $('#' + JTF);
   var $span = $jtf.find('span');
   $jtf.textfill({debug: true, maxFontPixels: 0});
-  assert.equal($span.css('font-size'), '158px');
+  assert.equal($span.css('font-size'), '143px');
 });
 
 
@@ -154,7 +154,7 @@ QUnit.test('minFontPixels too big to fit in, but widthOnly = True and width fits
     maxFontPixels: 100,
     widthOnly: true
   });
-  assert.equal($span.css('font-size'), '60px');
+  assert.equal($span.css('font-size'), '72px');
 });
 
 
@@ -183,6 +183,50 @@ QUnit.test('minFontPixels too big to fit in, W/H both fail, even widthOnly = Tru
     widthOnly: true
   });
   assert.equal($span.css('font-size'), '20px');
+});
+
+QUnit.test('Using pt', function (assert) {
+    setup({
+        div: {
+            id: JTF,
+            width: 40,
+            height: 40
+        },
+        span: {
+            css: {
+                'font-family': 'VT323',
+                'font-size': '20pt',
+            },
+            text: 'test 123'
+        }
+    });
+
+    var $jtf = $('#' + JTF);
+    var $span = $jtf.find('span');
+    $jtf.textfill({debug: true,scalePt:true});
+    assert.equal($span[0].style['font-size'],'13pt');
+});
+
+QUnit.test('Do not enlarge', function (assert) {
+    setup({
+        div: {
+            id: JTF,
+            width: 200,
+            height: 200
+        },
+        span: {
+            css: {
+                'font-family': 'VT323',
+                'font-size': '20px',
+            },
+            text: 'test'
+        }
+    });
+
+    var $jtf = $('#' + JTF);
+    var $span = $jtf.find('span');
+    $jtf.textfill({debug: true,doNotEnlarge:true});
+    assert.equal($span[0].style['font-size'],'20px');
 });
 
 
